@@ -1,0 +1,6 @@
+logs
+checkpoints
+outputs
+src
+experiments
+**/__pycache__/
