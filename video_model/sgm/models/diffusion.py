@@ -45,6 +45,10 @@ except Exception:
         import clip as liv_clip
     except Exception:
         liv_clip = None
+try:
+    from ..modules.critic_model.llava_critic import LlavaBertCritic
+except Exception:
+    LlavaBertCritic = None
 import torch.nn.functional as F
 
 TensorTree = Union[torch.Tensor, Dict[str, Any], List[Any], Tuple[Any, ...]]
@@ -95,6 +99,9 @@ class DiffusionEngine(pl.LightningModule):
         ddpo_amp_dtype: str = "fp16",
         reward_use_pil_pre: bool = False,
         reward_offload_after_score: bool = False,
+        critic_type: str = "liv",
+        llava_model_id: str = "llava-hf/llava-1.5-7b-hf",
+        llava_question: str = "Describe the robot manipulation action taking place in this video.",
         val_cycle_enabled: bool = True,
         val_cycle_every: int = 50,
         val_cycle_max_seqs: int = 1,
@@ -145,20 +152,41 @@ class DiffusionEngine(pl.LightningModule):
         self.vision_encoder_lr_scale = vision_encoder_lr_scale
         self.pose_decoder_lr_scale = pose_decoder_lr_scale
         self.grad_config = grad_config
-        # Keep LIV outside nn.Module registration so DDP/NCCL does not
-        # try to broadcast its buffers during _sync_buffers.
-        if load_liv is not None:
-            try:
-                liv_model = load_liv()
-                liv_model.eval()
-                for p in liv_model.parameters():
-                    p.requires_grad = False
-                object.__setattr__(self, "liv_model", liv_model)
-            except Exception as exc:
-                print(f"[warn] Failed to initialize LIV reward model: {exc}")
-                object.__setattr__(self, "liv_model", None)
+        # Reward/critic model for DDPO steering, selectable via `critic_type`:
+        #   "liv"   -> LIV image-language value model (per-frame cosine reward)
+        #   "llava" -> LLaVA-1.5 + BERTScore critic (per-frame VLM reward)
+        # Kept outside nn.Module registration so DDP/NCCL does not broadcast
+        # their buffers during _sync_buffers.
+        self.critic_type = str(critic_type).lower()
+        self.llava_question = str(llava_question)
+        object.__setattr__(self, "liv_model", None)
+        object.__setattr__(self, "llava_critic", None)
+        if self.critic_type == "liv":
+            if load_liv is not None:
+                try:
+                    liv_model = load_liv()
+                    liv_model.eval()
+                    for p in liv_model.parameters():
+                        p.requires_grad = False
+                    object.__setattr__(self, "liv_model", liv_model)
+                except Exception as exc:
+                    print(f"[warn] Failed to initialize LIV reward model: {exc}")
+        elif self.critic_type == "llava":
+            if LlavaBertCritic is not None:
+                try:
+                    object.__setattr__(
+                        self,
+                        "llava_critic",
+                        LlavaBertCritic(model_id=llava_model_id, num_frames=int(num_video_frames)),
+                    )
+                except Exception as exc:
+                    print(f"[warn] Failed to initialize LLaVA critic: {exc}")
+            else:
+                print("[warn] critic_type='llava' but LlavaBertCritic import failed.")
         else:
-            object.__setattr__(self, "liv_model", None)
+            raise ValueError(
+                f"Unknown critic_type={critic_type!r}; expected 'liv' or 'llava'."
+            )
         self.use_ddpo = bool(use_ddpo)
         self.ddpo_lambda = float(ddpo_lambda)
         self.ddpo_steps = int(ddpo_steps)
@@ -661,6 +689,20 @@ class DiffusionEngine(pl.LightningModule):
 
 
     def _cr_score(self, imgs_pre: torch.Tensor, caps: list[str]):
+        """Dispatch to the configured critic (``critic_type``): LIV or LLaVA.
+
+        Returns one reward per input image, shape ``(N,)``, so every DDPO reward
+        call-site stays agnostic to which critic is used.
+        """
+        if len(caps) != imgs_pre.shape[0]:
+            raise ValueError(
+                f"Expected one caption per image, got {len(caps)} captions for {imgs_pre.shape[0]} images."
+            )
+        if getattr(self, "critic_type", "liv") == "llava":
+            return self._llava_score(imgs_pre, caps)
+        return self._liv_score(imgs_pre, caps)
+
+    def _liv_score(self, imgs_pre: torch.Tensor, caps: list[str]):
         """
         LIV reward: cosine similarity between per-image vision embeddings and prompt text embeddings.
         """
@@ -669,11 +711,6 @@ class DiffusionEngine(pl.LightningModule):
                 "LIV reward requested but LIV imports failed. "
                 "Install with `pip install LIV-robotics`."
             )
-        if len(caps) != imgs_pre.shape[0]:
-            raise ValueError(
-                f"Expected one caption per image, got {len(caps)} captions for {imgs_pre.shape[0]} images."
-            )
-
         dev = imgs_pre.device
         self._cr_move_to(dev)
         imgs = self._to_unit_range(imgs_pre).float()
@@ -686,6 +723,31 @@ class DiffusionEngine(pl.LightningModule):
             core = self.liv_model.module if hasattr(self.liv_model, "module") else self.liv_model
             score = core.sim(img_embedding, text_embedding)
         return score.to(device=dev, dtype=torch.float32).view(-1)
+
+    def _llava_score(self, imgs_pre: torch.Tensor, caps: list[str]):
+        """
+        LLaVA critic reward: LLaVA-1.5 answers a fixed question about each frame and
+        the answer is compared to the task instruction (``caps``) via BERTScore F1.
+        Returns one reward per image, shape ``(N,)``, matching the LIV interface.
+        Note: this runs a LLaVA generation per frame and is much slower than LIV.
+        """
+        if self.llava_critic is None:
+            raise RuntimeError(
+                "LLaVA reward requested but LlavaBertCritic failed to initialize. "
+                "Check the transformers/bert_score install and llava_model_id."
+            )
+        dev = imgs_pre.device
+        imgs = self._to_unit_range(imgs_pre).float().clamp(0.0, 1.0)  # (N,C,H,W) in [0,1]
+        imgs_np = imgs.permute(0, 2, 3, 1).detach().cpu().numpy()      # (N,H,W,3) float [0,1]
+        scores = []
+        for i in range(imgs_np.shape[0]):
+            out = self.llava_critic.score_frames(
+                frames=imgs_np[i][None],          # single frame as a 1-frame clip
+                question=self.llava_question,
+                reference=str(caps[i]),
+            )
+            scores.append(float(out["reward"]))
+        return torch.tensor(scores, device=dev, dtype=torch.float32).view(-1)
 
     @torch.no_grad()
     def _compute_cyclereward_consistency_metric(
@@ -1687,11 +1749,17 @@ class DiffusionEngine(pl.LightningModule):
     def on_train_start(self, *args, **kwargs):
         if self.sampler is None or self.loss_fn is None:
             raise ValueError("Sampler and loss function need to be set for training.")
-        if bool(getattr(self, "use_ddpo", False)) and self.liv_model is None and self._is_global_rank_zero():
-            print(
-                "[warn] use_ddpo=True but LIV reward model is unavailable; "
-                "loss_ddpo will stay zero. Install LIV-robotics and verify import/load."
+        if bool(getattr(self, "use_ddpo", False)) and self._is_global_rank_zero():
+            _active_critic = (
+                self.llava_critic if getattr(self, "critic_type", "liv") == "llava"
+                else self.liv_model
             )
+            if _active_critic is None:
+                print(
+                    f"[warn] use_ddpo=True but the '{getattr(self, 'critic_type', 'liv')}' "
+                    "reward model is unavailable; loss_ddpo will stay zero. "
+                    "Check the critic install (LIV-robotics for 'liv'; transformers/bert_score for 'llava')."
+                )
 
     def on_train_batch_end(self, *args, **kwargs):
         if self.use_ema:

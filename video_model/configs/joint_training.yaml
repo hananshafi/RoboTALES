@@ -14,6 +14,10 @@ model:
     en_and_decode_n_samples_a_time: 2
     vision_encoder_lr_scale: 5
     pose_decoder_lr_scale: 5
+    # DDPO reward/critic model: "liv" (LIV image-language value, default) or
+    # "llava" (LLaVA-1.5 + BERTScore VLM critic). Override on the CLI with
+    # model.params.critic_type=llava
+    critic_type: liv
     grad_config:
       train_vision_encoder: True
       train_pose_pred_net: True

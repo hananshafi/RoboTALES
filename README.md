@@ -43,7 +43,7 @@ RoboTALES couples four components (see Figure 2 in the paper):
 |---|---|---|
 | **LLM Planner** `F_P` | Decomposes instruction `τ` into `K∈[2,5]` sub-goals → augmented plan `C*` | `video_model/videopolicy_planner.py`, `sgm/data/llm_planner.py` |
 | **Video Generator** `G_θ` | Stable Video Diffusion backbone; predicts short-horizon future latents conditioned on the plan | `sgm/models/diffusion.py`, `sgm/modules/diffusionmodules/video_model.py` |
-| **VLM Critic** `F_R` | Frozen VLM scoring imagined rollouts; reward drives DDPO steering of `G_θ` | `sgm/modules/critic_model/llava_critic.py`, `llava_cycle_critic.py` |
+| **Reward Critic** `F_R` | Scores imagined rollouts; reward drives DDPO steering of `G_θ`. Selectable via `critic_type`: **LIV** (default) or **LLaVA-1.5 + BERTScore** | dispatch in `sgm/models/diffusion.py`; critics in `sgm/modules/critic_model/llava_critic.py`, `llava_cycle_critic.py` |
 | **Action Policy** `π_φ` | 1D action diffusion UNet decoding executable actions from `G_θ` features | `pose_net` in the network config; `sgm/models/diffusion.py` |
 
 ## 🗂️ Repository Structure
@@ -72,10 +72,18 @@ RoboTALES couples four components (see Figure 2 in the paper):
 └── libero/                     # self-contained LIBERO-10 training/eval release
 ```
 
-> **Critic variants.** `diffusion.py` is the canonical engine used by all shipped configs (the VLM
-> critic + DDPO are built in). `diffusion_sbert.py` and `diffusion_modified_cycle.py` swap in
-> alternative reward signals — to use one, point a config's `model.target` at it
-> (e.g. `sgm.models.diffusion_sbert.DiffusionEngine`).
+> **Critic choice.** `diffusion.py` is the canonical engine used by all shipped configs (DDPO is
+> built in) and supports **two reward critics**, selected with `model.params.critic_type`:
+> - `liv` — LIV image-language value model, per-frame cosine reward (**default**).
+> - `llava` — LLaVA-1.5 + BERTScore VLM critic (`sgm/modules/critic_model/llava_critic.py`).
+>
+> Override from the CLI, e.g.:
+> ```bash
+> ... --base=configs/joint_training.yaml ... model.params.critic_type=llava
+> ```
+> (LLaVA runs a generation per reward call and is much slower than LIV.) The separate
+> `diffusion_sbert.py` (SBERT reward) and `diffusion_modified_cycle.py` (LLaVA CycleReward) engines
+> swap in other reward signals — point a config's `model.target` at them to use those instead.
 
 ## 🛠️ Installation
 
