@@ -3,8 +3,6 @@
 ### ECCV 2026
 ### [Project Page](TODO) | [Paper](TODO) | [arXiv](TODO)
 
-> Anonymous ECCV 2026 Submission — Paper ID #11562
-
 <p align="center">
   <a href="assets/iccv-2026-teaser.pdf"><img src="assets/iccv-2026-teaser.png" width="80%"></a>
 </p>
@@ -179,14 +177,10 @@ PYTHONPATH=. python main.py --base=configs/stage_2_action_decoder_training.yaml 
 
 | Config | Role |
 |---|---|
-| `joint_training.yaml` | **RoboTALES single-stage** joint training (main method) |
-| `stage_1_video_model_training.yaml` | Decoupled baseline — stage 1 video model (planner + critic) |
-| `stage_2_action_decoder_training.yaml` | Decoupled baseline — stage 2 action decoder, video model frozen |
-| `stage_1_video_model_train_only_ddpo_no_planner.yaml` | Ablation — DDPO critic **without** the LLM planner (stage 1) |
-| `stage_2_action_with_ddpo_no_planner.yaml` | Ablation — DDPO critic **without** the LLM planner (stage 2) |
-| `stage_2_action_decoder_training_sft_action_only_robocasa.yaml` | Ablation — supervised action-only policy (no critic) |
-| `stage_2_action_decoder_training_sft_action_only_policy12_robocasa.yaml` | Action-only ablation (policy-12 variant) |
-| `stage_1_video_model_training_libero.yaml` | Stage 1 on LIBERO (see also the `libero/` release) |
+| `joint_training.yaml` | **RoboTALES single-stage** joint training — main method (RoboCasa) |
+| `stage_1_video_model_training.yaml` | Decoupled baseline — stage 1 video model (RoboCasa) |
+| `stage_2_action_decoder_training.yaml` | Decoupled baseline — stage 2 action decoder, video model frozen (RoboCasa) |
+| `stage_1_video_model_training_libero.yaml` | Decoupled — stage 1 video model on LIBERO (see also the `libero/` release) |
 
 > **Hardware.** Configs target an **8× GPU** node with **80 GB** VRAM each. An overall batch size of
 > **32** works well; larger batch sizes tend to help. Adjust `lightning.trainer.devices` and
