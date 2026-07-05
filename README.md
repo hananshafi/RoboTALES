@@ -116,6 +116,24 @@ video_model/
 └── datasets/v0.1/...
 ```
 
+## 🧠 LLM Planner
+
+The hierarchical planner is a **closed-source LLM** (Google **Gemini 2.5 Pro**, via `google-genai`).
+Provide your own key through the environment — no key is bundled:
+
+```bash
+pip install -U google-genai
+export GEMINI_API_KEY="<your-gemini-key>"
+```
+
+**Reproducing without a key.** A **plan cache** ships with the repo
+(`video_model/sgm/data/planner_cache.jsonl` for RoboCasa,
+`libero/video_model/sgm/data/planner_cache_libero.jsonl` for LIBERO). Plans for the benchmark task
+instructions are pre-computed there, so the shipped experiments run **without** an API key — the
+planner serves cached plans by instruction lookup. On a cache **miss** with no `GEMINI_API_KEY` set,
+it raises a clear error rather than failing silently; set the key (or add the instruction to the
+cache) to plan new tasks.
+
 ## 🚀 Training
 
 All training is launched with `main.py` from inside the `video_model/` folder. The general form is:

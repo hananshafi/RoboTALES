@@ -266,10 +266,15 @@ class OnlinePlanner:
                  cache_path="planner_cache.jsonl", ttl_hours=168):
         self.model = model
         self.fallback_models = ["gemini-2.5-pro", "gemini-2.0-flash"]
-        self.api_key = "REMOVED_GEMINI_KEY"
+        # Gemini API key from the environment (never hard-code secrets). If unset,
+        # the planner serves cached plans and errors clearly on a cache miss.
+        self.api_key = os.environ.get("GEMINI_API_KEY")
         self.cache = StepsCache(cache_path, ttl_hours)
-        from google import genai  # pip install -U google-genai
-        self.client = genai.Client(api_key=self.api_key)
+        try:
+            from google import genai  # pip install -U google-genai
+            self.client = genai.Client(api_key=self.api_key) if self.api_key else None
+        except Exception:
+            self.client = None
 
         # Keep separate maps for train/test lookup, but tolerate missing files.
         # Resolve the train cache relative to this file so it works on any host
@@ -317,6 +322,12 @@ class OnlinePlanner:
         min_steps: int,
         max_steps: int,
     ) -> Dict[str, List[str]]:
+        if self.client is None:
+            raise RuntimeError(
+                "Planner cache miss and no Gemini client available. Set GEMINI_API_KEY "
+                "(and `pip install -U google-genai`) to query the LLM planner, or add the "
+                "instruction to the planner cache (planner_cache.jsonl)."
+            )
         candidates = []
         for name in [self.model, *self.fallback_models]:
             if isinstance(name, str) and name and name not in candidates:

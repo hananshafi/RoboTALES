@@ -265,34 +265,37 @@ class OnlinePlanner:
     def __init__(self, model: str = "gemini-2.5-pro",
                  cache_path="planner_cache_libero.jsonl", ttl_hours=168):
         self.model = model
-        self.api_key = "REMOVED_GEMINI_KEY"
+        # Gemini API key from the environment (never hard-code secrets). If unset,
+        # the planner serves cached plans and errors clearly on a cache miss.
+        self.api_key = os.environ.get("GEMINI_API_KEY")
         self.cache = StepsCache(cache_path, ttl_hours)
-        from google import genai  # pip install -U google-genai
-        self.client = genai.Client(api_key=self.api_key)
+        try:
+            from google import genai  # pip install -U google-genai
+            self.client = genai.Client(api_key=self.api_key) if self.api_key else None
+        except Exception:
+            self.client = None
         self.records = {}
-        self.records_test = {}
-        with open(os.path.join(os.path.dirname(__file__), "planner_cache_libero.jsonl"), "r") as f:
+        _cache_file = os.path.join(os.path.dirname(__file__), "planner_cache_libero.jsonl")
+        with open(_cache_file, "r") as f:
             for line in f:
                 obj = json.loads(line)
                 self.records[obj["key"]] = obj["value"]
-        f.close()
-        # print(f"Loaded {len(self.records)} training records from cache.")
-        with open("planner_cache_libero.jsonl", "r") as f:
-            for line in f:
-                obj = json.loads(line)
-                self.records_test[obj["key"]] = obj["value"]
-        f.close()
+        # train and test lookups share the shipped cache
+        self.records_test = dict(self.records)
 
     def plan_steps(self, instruction: str, min_steps=2, max_steps=5, mode='train') -> Dict[str, List[str]]:
         #key = _sha1(f"{self.model}|{instruction}")
         key = instruction
-        if mode == "train":
-            # print(f"Looking up instruction in training cache: {instruction}")
-            hit = self.records[key]  
-            #self.cache.get(key)
-        else:
-            hit = self.records_test[key]
-        if hit: return hit
+        records = self.records if mode == "train" else self.records_test
+        hit = records.get(key)
+        if hit:
+            return hit
+        if self.client is None:
+            raise RuntimeError(
+                f"Planner cache miss for {instruction!r} and no Gemini client available. "
+                "Set GEMINI_API_KEY (and `pip install -U google-genai`) to query the LLM "
+                "planner, or add this instruction to planner_cache_libero.jsonl."
+            )
         user_msg= (INSTRUCTION_PROMPT.replace("{{SYSTEM_PROMPT}}", SYSTEM_PROMPT).strip() + " " + instruction)
 
         # user_msg = (
