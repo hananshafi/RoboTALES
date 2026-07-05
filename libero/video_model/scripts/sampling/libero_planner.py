@@ -10,7 +10,10 @@ _VIDEO_MODEL_DIR = os.path.abspath(
 if _VIDEO_MODEL_DIR not in sys.path:
     sys.path.insert(0, _VIDEO_MODEL_DIR)
 
-sys.path.insert(0, "/bigdata/hanan/dev/robosuite_libero")
+# robosuite fork: set ROBOSUITE_LIBERO_PATH, or put it on PYTHONPATH (see README).
+_robosuite = os.environ.get("ROBOSUITE_LIBERO_PATH")
+if _robosuite and _robosuite not in sys.path:
+    sys.path.insert(0, _robosuite)
 
 from omegaconf import OmegaConf
 import math
@@ -44,8 +47,7 @@ import pdb
 from termcolor import colored
 np.set_printoptions(precision=5, suppress=True)
 
-# Import the planner - adjust path as needed
-sys.path.append('/bigdata/hanan/dev/videopolicy/video_model')
+# Import the planner (videopolicy_planner.py lives in video_model/, already on sys.path).
 from videopolicy_planner import plan_steps, plan_task
 
 

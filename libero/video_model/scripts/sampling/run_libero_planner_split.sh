@@ -15,6 +15,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VIDEO_MODEL_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+LIBERO_PP="${LIBERO_PP:-/path/to/LIBERO:/path/to/robosuite_libero}"
 
 GPU_A="${1:-4}"
 GPU_B="${2:-5}"
@@ -60,7 +61,7 @@ PYEOF
 echo ""
 echo "===== Launching GPU $GPU_A (tasks 1-5) ====="
 CUDA_VISIBLE_DEVICES=$GPU_A \
-  PYTHONPATH=/home/hanan/dev/LIBERO \
+  PYTHONPATH="${LIBERO_PP}:$VIDEO_MODEL_DIR" \
   nohup python "$SCRIPT_DIR/libero_planner.py" \
     --config="$CONFIG_DIR/svd_xt_modified_gpu0.yaml" \
     --use_planner \
@@ -70,7 +71,7 @@ echo "  PID=$PID_A  log=experiments/libero_planner_gpu${GPU_A}.log"
 
 echo "===== Launching GPU $GPU_B (tasks 6-10) ====="
 CUDA_VISIBLE_DEVICES=$GPU_B \
-  PYTHONPATH=/home/hanan/dev/LIBERO \
+  PYTHONPATH="${LIBERO_PP}:$VIDEO_MODEL_DIR" \
   nohup python "$SCRIPT_DIR/libero_planner.py" \
     --config="$CONFIG_DIR/svd_xt_modified_gpu1.yaml" \
     --use_planner \

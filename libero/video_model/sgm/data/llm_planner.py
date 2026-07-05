@@ -271,7 +271,7 @@ class OnlinePlanner:
         self.client = genai.Client(api_key=self.api_key)
         self.records = {}
         self.records_test = {}
-        with open("/home/hanan/dev/videopolicy_libero/video_model/sgm/data/planner_cache_libero.jsonl", "r") as f:
+        with open(os.path.join(os.path.dirname(__file__), "planner_cache_libero.jsonl"), "r") as f:
             for line in f:
                 obj = json.loads(line)
                 self.records[obj["key"]] = obj["value"]

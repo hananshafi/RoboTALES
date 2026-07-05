@@ -4,7 +4,7 @@ model:
     scale_factor: 0.18215
     disable_first_stage_autocast: true
     ckpt_path: 
-      /home/hanan/dev/videopolicy_new_ckpt/libero_2_stage_training_release/video_model/logs/stage_2_training_new_ckpt/checkpoints/epoch=00001-step=00025000.ckpt
+      logs/stage_2_training_new_ckpt/checkpoints/epoch=00001-step=00025000.ckpt
 
     denoiser_config:
       target: sgm.modules.diffusionmodules.denoiser.Denoiser

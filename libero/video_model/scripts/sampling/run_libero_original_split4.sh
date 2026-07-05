@@ -15,6 +15,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VIDEO_MODEL_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+LIBERO_PP="${LIBERO_PP:-/path/to/LIBERO:/path/to/robosuite_libero}"
 
 GPU_A="${1:-3}"
 GPU_B="${2:-4}"
@@ -74,7 +75,7 @@ launch () {
     (
       cd "$VIDEO_MODEL_DIR" && \
       CUDA_VISIBLE_DEVICES=$gpu \
-      PYTHONPATH="/bigdata/hanan/dev/robosuite_libero:$VIDEO_MODEL_DIR:/bigdata/hanan/dev/LIBERO" \
+      PYTHONPATH="${LIBERO_PP}:$VIDEO_MODEL_DIR" \
       nohup python scripts/sampling/libero_experiment.py \
         --config="scripts/sampling/configs/svd_xt_libero_90_original_${cfg_suffix}.yaml" \
       > "$VIDEO_MODEL_DIR/experiments/${log_name}" 2>&1 &

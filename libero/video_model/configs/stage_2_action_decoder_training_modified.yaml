@@ -8,7 +8,7 @@ model:
     scale_factor: 0.18215
     disable_first_stage_autocast: True
     # ckpt_path: logs/stage_1_training/checkpoints/trainstep_checkpoints/enter_your_checkpoint_here.ckpt
-    ckpt_path: /home/hanan/dev/videopolicy_new_ckpt/libero_2_stage_training_release/video_model/logs/stage_1_training/checkpoints/epoch=00001-step=00025000.ckpt
+    ckpt_path: logs/stage_1_training/checkpoints/epoch=00001-step=00025000.ckpt
     use_ema: False
     ema_decay_rate: 0.9999
     en_and_decode_n_samples_a_time: 2

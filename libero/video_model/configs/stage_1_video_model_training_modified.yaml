@@ -7,7 +7,7 @@ model:
   params:
     scale_factor: 0.18215
     disable_first_stage_autocast: True
-    ckpt_path: /home/hanan/dev/videopolicy_new_ckpt/libero_2_stage_training_release/video_model/logs/stage_2_training/checkpoints/epoch=00039-step=00170000.ckpt  #checkpoints/svd_xt.safetensors
+    ckpt_path: logs/stage_2_training/checkpoints/epoch=00039-step=00170000.ckpt  #checkpoints/svd_xt.safetensors
     use_ema: False
     ema_decay_rate: 0.9999
     en_and_decode_n_samples_a_time: 2
