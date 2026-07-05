@@ -12,11 +12,13 @@ Two APIs:
 
 Requirements
 - Python 3.9+
-- pip install -U google-genai
+- pip install -U google-genai   (for Gemini)   and/or   pip install -U openai   (for OpenAI)
 - (Optional) pip install h5py for read_lang_from_hdf5()
 
-Auth
-- Pass api_key="..." OR set GEMINI_API_KEY in your environment.
+Auth — bring your own key for either provider:
+- Gemini: pass api_key="..." or set GEMINI_API_KEY  (models: gemini-*, the default)
+- OpenAI: pass api_key="..." or set OPENAI_API_KEY   (models: gpt-*, o*)
+The provider is auto-detected from the model name; override with provider="gemini"|"openai".
 """
 
 from __future__ import annotations
@@ -146,28 +148,55 @@ def _resp_text(resp: Any) -> str:
         return text
     return str(resp)
 
+# ---------- LLM provider dispatch (Gemini or OpenAI) ----------
+
+_OPENAI_MODEL_PREFIXES = ("gpt", "o1", "o3", "o4", "chatgpt")
+
+def _infer_provider(model: str) -> str:
+    """Pick the provider from the model name (override with an explicit provider)."""
+    return "openai" if str(model).lower().startswith(_OPENAI_MODEL_PREFIXES) else "gemini"
+
+def _generate_text(prompt: str, model: str, api_key: Optional[str] = None,
+                   provider: Optional[str] = None) -> str:
+    """Query the configured LLM and return raw text. Supports Gemini and OpenAI."""
+    provider = (provider or _infer_provider(model)).lower()
+    if provider == "openai":
+        try:
+            from openai import OpenAI  # pip install -U openai
+        except Exception as e:  # pragma: no cover
+            raise RuntimeError("Missing dependency: please `pip install -U openai`") from e
+        client = OpenAI(api_key=api_key) if api_key else OpenAI()  # OpenAI() reads OPENAI_API_KEY
+        resp = client.chat.completions.create(
+            model=model, messages=[{"role": "user", "content": prompt}]
+        )
+        return resp.choices[0].message.content or ""
+    if provider == "gemini":
+        try:
+            from google import genai  # pip install -U google-genai
+        except Exception as e:  # pragma: no cover
+            raise RuntimeError("Missing dependency: please `pip install -U google-genai`") from e
+        client = genai.Client(api_key=api_key) if api_key else genai.Client()  # reads GEMINI_API_KEY
+        resp = client.models.generate_content(model=model, contents=prompt)
+        return _resp_text(resp)
+    raise ValueError(f"Unknown provider {provider!r}; expected 'gemini' or 'openai'.")
+
 # ---------- Public API (steps only) ----------
 
-def plan_steps(lang: str, api_key: Optional[str] = None, model: str = "gemini-2.5-pro") -> List[str]:
+def plan_steps(lang: str, api_key: Optional[str] = None, model: str = "gemini-2.5-pro",
+               provider: Optional[str] = None) -> List[str]:
     """
     Convert a RoboCasa instruction string (ep_meta['lang']) into a compact list of subtasks.
+    Works with Gemini or OpenAI (see `provider` / model name).
 
     Returns
     -------
     List[str]  # e.g., ["open the microwave door", "place the bowl inside", "close the door", "press start"]
     """
-    try:
-        from google import genai  # pip install google-genai
-    except Exception as e:  # pragma: no cover
-        raise RuntimeError("Missing dependency: please `pip install -U google-genai`") from e
-
-    client = genai.Client(api_key=api_key) if api_key else genai.Client()
     user_prompt = (
         STEPS_SYSTEM_PROMPT.strip() + "\n\n" + FEW_SHOT_STEPS.strip()
         + "\n\nInstruction: " + json.dumps(lang) + "\nReturn ONLY the JSON."
     )
-    resp = client.models.generate_content(model=model, contents=user_prompt)
-    data = _extract_json(_resp_text(resp))
+    data = _extract_json(_generate_text(user_prompt, model=model, api_key=api_key, provider=provider))
     steps = data.get("steps", [])
     if not isinstance(steps, list) or not all(isinstance(s, str) and s.strip() for s in steps):
         raise ValueError("Model did not return a valid 'steps' list.")
@@ -175,17 +204,11 @@ def plan_steps(lang: str, api_key: Optional[str] = None, model: str = "gemini-2.
 
 # ---------- Optional: keep rich plan for users who still want it ----------
 
-def plan_task(lang: str, api_key: Optional[str] = None, model: str = "gemini-2.5-pro") -> Dict[str, Any]:
+def plan_task(lang: str, api_key: Optional[str] = None, model: str = "gemini-2.5-pro",
+              provider: Optional[str] = None) -> Dict[str, Any]:
     """Legacy: return detailed plan JSON (action + world_state_delta + visuals, etc.)."""
-    try:
-        from google import genai  # pip install google-genai
-    except Exception as e:  # pragma: no cover
-        raise RuntimeError("Missing dependency: please `pip install -U google-genai`") from e
-
-    client = genai.Client(api_key=api_key) if api_key else genai.Client()
     prompt = PLANNER_SYSTEM_PROMPT.strip() + "\n\nInstruction: " + json.dumps(lang) + "\nReturn ONLY the JSON."
-    resp = client.models.generate_content(model=model, contents=prompt)
-    data = _extract_json(_resp_text(resp))
+    data = _extract_json(_generate_text(prompt, model=model, api_key=api_key, provider=provider))
     if "steps" not in data or not isinstance(data["steps"], list):
         raise ValueError("Detailed planner: missing 'steps' array.")
     return data
@@ -214,16 +237,20 @@ if __name__ == "__main__":
     import argparse, sys
     parser = argparse.ArgumentParser(description="RoboCasa minimal planner -> small subtasks")
     parser.add_argument("--lang", type=str, help="RoboCasa task instruction string")
-    parser.add_argument("--api_key", type=str, default=None, help="Gemini API key (or set GEMINI_API_KEY)")
-    parser.add_argument("--model", type=str, default="gemini-2.5-pro")
+    parser.add_argument("--api_key", type=str, default=None,
+                        help="API key (or set GEMINI_API_KEY / OPENAI_API_KEY)")
+    parser.add_argument("--model", type=str, default="gemini-2.5-pro",
+                        help="LLM model, e.g. gemini-2.5-pro or gpt-4o")
+    parser.add_argument("--provider", type=str, default=None, choices=["gemini", "openai"],
+                        help="Override provider (else inferred from --model)")
     parser.add_argument("--detailed", action="store_true", help="Return rich plan JSON instead of small steps")
     args = parser.parse_args()
     if not args.lang:
         print("Please pass --lang 'your instruction'.", file=sys.stderr)
         sys.exit(2)
     if args.detailed:
-        out = plan_task(args.lang, api_key=args.api_key, model=args.model)
+        out = plan_task(args.lang, api_key=args.api_key, model=args.model, provider=args.provider)
         print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
-        steps = plan_steps(args.lang, api_key=args.api_key, model=args.model)
+        steps = plan_steps(args.lang, api_key=args.api_key, model=args.model, provider=args.provider)
         print(json.dumps({"steps": steps}, indent=2, ensure_ascii=False))

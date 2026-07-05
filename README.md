@@ -118,21 +118,29 @@ video_model/
 
 ## 🧠 LLM Planner
 
-The hierarchical planner is a **closed-source LLM** (Google **Gemini 2.5 Pro**, via `google-genai`).
-Provide your own key through the environment — no key is bundled:
+The hierarchical planner calls a **closed-source LLM** — either **Google Gemini** or **OpenAI**.
+Bring **your own key** through the environment; **no key is bundled**. The provider is auto-detected
+from the model name (`gemini-*` → Gemini, `gpt-*` / `o*` → OpenAI):
 
 ```bash
+# Gemini (default, e.g. gemini-2.5-pro)
 pip install -U google-genai
 export GEMINI_API_KEY="<your-gemini-key>"
+
+# — or — OpenAI (e.g. gpt-4o)
+pip install -U openai
+export OPENAI_API_KEY="<your-openai-key>"
 ```
+Pick the model per config/CLI (e.g. `--model gpt-4o`, or `model="gpt-4o"` in a planner call); pass
+`provider="gemini"|"openai"` to override the auto-detection.
 
 **Reproducing without a key.** A **plan cache** ships with the repo
 (`video_model/sgm/data/planner_cache.jsonl` for RoboCasa,
 `libero/video_model/sgm/data/planner_cache_libero.jsonl` for LIBERO). Plans for the benchmark task
 instructions are pre-computed there, so the shipped experiments run **without** an API key — the
-planner serves cached plans by instruction lookup. On a cache **miss** with no `GEMINI_API_KEY` set,
-it raises a clear error rather than failing silently; set the key (or add the instruction to the
-cache) to plan new tasks.
+planner serves cached plans by instruction lookup. On a cache **miss** with no key set, it raises a
+clear error rather than failing silently; set `GEMINI_API_KEY` or `OPENAI_API_KEY` (or add the
+instruction to the cache) to plan new tasks.
 
 ## 🚀 Training
 

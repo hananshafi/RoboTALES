@@ -261,19 +261,37 @@ class StepsCache:
                 f.write(json.dumps(rec) + "\n")
 
 # ---------- online planner ----------
+_OPENAI_MODEL_PREFIXES = ("gpt", "o1", "o3", "o4", "chatgpt")
+
+
+def _infer_provider(model: str) -> str:
+    """Pick the LLM provider from the model name: gpt*/o* -> OpenAI, else Gemini."""
+    return "openai" if str(model).lower().startswith(_OPENAI_MODEL_PREFIXES) else "gemini"
+
+
 class OnlinePlanner:
     def __init__(self, model: str = "gemini-2.5-pro",
                  cache_path="planner_cache_libero.jsonl", ttl_hours=168):
         self.model = model
-        # Gemini API key from the environment (never hard-code secrets). If unset,
-        # the planner serves cached plans and errors clearly on a cache miss.
-        self.api_key = os.environ.get("GEMINI_API_KEY")
+        # Provider inferred from the model name (override by passing a gpt-*/o* model).
+        self.provider = _infer_provider(model)
+        # API key from the environment (never hard-code secrets). If unset, the
+        # planner serves cached plans and errors clearly on a cache miss.
         self.cache = StepsCache(cache_path, ttl_hours)
-        try:
-            from google import genai  # pip install -U google-genai
-            self.client = genai.Client(api_key=self.api_key) if self.api_key else None
-        except Exception:
-            self.client = None
+        if self.provider == "openai":
+            self.api_key = os.environ.get("OPENAI_API_KEY")
+            try:
+                from openai import OpenAI  # pip install -U openai
+                self.client = OpenAI(api_key=self.api_key) if self.api_key else None
+            except Exception:
+                self.client = None
+        else:
+            self.api_key = os.environ.get("GEMINI_API_KEY")
+            try:
+                from google import genai  # pip install -U google-genai
+                self.client = genai.Client(api_key=self.api_key) if self.api_key else None
+            except Exception:
+                self.client = None
         self.records = {}
         _cache_file = os.path.join(os.path.dirname(__file__), "planner_cache_libero.jsonl")
         with open(_cache_file, "r") as f:
@@ -292,9 +310,9 @@ class OnlinePlanner:
             return hit
         if self.client is None:
             raise RuntimeError(
-                f"Planner cache miss for {instruction!r} and no Gemini client available. "
-                "Set GEMINI_API_KEY (and `pip install -U google-genai`) to query the LLM "
-                "planner, or add this instruction to planner_cache_libero.jsonl."
+                f"Planner cache miss for {instruction!r} and no '{self.provider}' client "
+                "available. Set GEMINI_API_KEY (Gemini) or OPENAI_API_KEY (OpenAI) and install "
+                "the matching SDK, or add this instruction to planner_cache_libero.jsonl."
             )
         user_msg= (INSTRUCTION_PROMPT.replace("{{SYSTEM_PROMPT}}", SYSTEM_PROMPT).strip() + " " + instruction)
 
@@ -308,10 +326,19 @@ class OnlinePlanner:
         max_try = 3
         while max_try > 0:
             try:
-                resp = self.client.models.generate_content(model=self.model, contents=user_msg)
-                text = getattr(resp, "text", None) or getattr(resp, "output_text", None) or str(resp)
+                text = self._call_llm(self.model, user_msg)
                 parsed = parse_steps_output(text, min_steps=min_steps, max_steps=max_steps)
                 self.cache.put(key, parsed)
                 return parsed
             except:
                 max_try -= 1
+
+    def _call_llm(self, model_name: str, user_msg: str) -> str:
+        """Query the active provider (Gemini or OpenAI) and return the raw text."""
+        if self.provider == "openai":
+            resp = self.client.chat.completions.create(
+                model=model_name, messages=[{"role": "user", "content": user_msg}]
+            )
+            return resp.choices[0].message.content or ""
+        resp = self.client.models.generate_content(model=model_name, contents=user_msg)
+        return getattr(resp, "text", None) or getattr(resp, "output_text", None) or str(resp)
