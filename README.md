@@ -226,22 +226,82 @@ This prints per-task and overall mean success rates from the experiment record.
 ## 🤖 LIBERO-10
 
 The `libero/` folder is a **self-contained** release for the LIBERO-10 benchmark with its own
-`video_model/`, `sgm/`, configs, and scripts:
+`video_model/`, `sgm/`, configs, and scripts. Run everything from `libero/video_model/`:
 
 ```bash
 cd libero/video_model
-
-# Training (see configs/)
-PYTHONPATH=. python main.py --base=configs/stage_1_video_model_training.yaml --name=libero_stage1 ...
-PYTHONPATH=. python main.py --base=configs/stage_2_action_decoder_training.yaml --name=libero_stage2 ...
-
-# Evaluation
-PYTHONPATH=. python scripts/sampling/libero_experiment.py   # closed-loop LIBERO eval
-PYTHONPATH=. python scripts/sampling/libero_planner.py       # planner-conditioned eval
 ```
 
-See `libero/video_model/scripts/sampling/run_libero_original_split4.sh` and
-`run_libero_planner_split.sh` for example launch commands and task splits.
+Closed-loop evaluation imports the **LIBERO benchmark** and the **robosuite fork**, so clone those
+separately and add them to `PYTHONPATH` (training does not need them):
+
+```bash
+export LIBERO_PP="<path-to>/LIBERO:<path-to>/robosuite_libero"
+```
+
+> Checkpoint paths in the shipped configs are placeholders — set `model.params.ckpt_path` (training)
+> and the sampling config's `ckpt_path` (evaluation) to your own checkpoints.
+
+### Two-stage training
+
+Training is decoupled into a video-model stage and an action-decoder stage. Two engine variants
+ship: the base `diffusion.py` engine, and the planner-conditioned `diffusion_modified.py` engine
+(the `*_modified.yaml` configs).
+
+```bash
+# Stage 1 — video model (initialized from the SVD-XT checkpoint)
+PYTHONPATH=. python main.py --base=configs/stage_1_video_model_training.yaml \
+    --name=libero_stage1 --seed=24 --wandb=1
+
+# Stage 2 — action decoder on the frozen stage-1 video model
+#   (set model.params.ckpt_path to your stage-1 checkpoint)
+PYTHONPATH=. python main.py --base=configs/stage_2_action_decoder_training.yaml \
+    --name=libero_stage2 --seed=24 --wandb=1
+```
+
+For the planner-conditioned engine, swap in the `*_modified.yaml` configs
+(`sgm.models.diffusion_modified.DiffusionEngine`).
+
+| Config | Role |
+|---|---|
+| `stage_1_video_model_training.yaml` | Stage 1 video model — base `diffusion.py` |
+| `stage_2_action_decoder_training.yaml` | Stage 2 action decoder, video model frozen |
+| `stage_1_video_model_training_modified.yaml` | Stage 1 — planner-conditioned `diffusion_modified.py` |
+| `stage_2_action_decoder_training_modified.yaml` | Stage 2 — planner-conditioned engine |
+
+### Evaluation
+
+**Baseline (no planner)** — `libero_experiment.py` on a LIBERO task suite:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH="$LIBERO_PP:." \
+    python scripts/sampling/libero_experiment.py \
+    --config=scripts/sampling/configs/svd_xt_libero_90_original.yaml
+```
+Task-suite configs: `svd_xt_libero_90_original.yaml` (LIBERO-90), `svd_xt_libero_goal.yaml`,
+`svd_xt_libero_object.yaml`, `svd_xt_libero_spatial.yaml`.
+
+**RoboTALES (planner-conditioned)** — `libero_planner.py` with `--use_planner`:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH="$LIBERO_PP:." \
+    python scripts/sampling/libero_planner.py \
+    --config=scripts/sampling/configs/svd_xt_modified.yaml --use_planner
+```
+
+**Multi-GPU splits.** Two helper scripts fan the tasks across GPUs (they auto-generate the per-GPU
+split configs). Edit the hard-coded `PYTHONPATH` inside each script to point at your `LIBERO` /
+`robosuite_libero` clones first:
+
+```bash
+# Baseline: LIBERO-90 split across 4 GPUs (default 3 4 5 6)
+bash scripts/sampling/run_libero_original_split4.sh [GPU_A GPU_B GPU_C GPU_D]
+
+# Planner: split across 2 GPUs (default 4 5)
+bash scripts/sampling/run_libero_planner_split.sh [GPU_A GPU_B]
+```
+
+Per-task rollouts and success results are written under `experiments/<log_folder>/`.
 
 ## 🙏 Acknowledgement
 
