@@ -70,19 +70,6 @@ RoboTALES couples four components (see Figure 2 in the paper):
 └── libero/                     # self-contained LIBERO-10 training/eval release
 ```
 
-> **Critic choice.** `diffusion.py` is the canonical engine used by all shipped configs (DDPO is
-> built in) and supports **two reward critics**, selected with `model.params.critic_type`:
-> - `liv` — LIV image-language value model, per-frame cosine reward (**default**).
-> - `llava` — LLaVA-1.5 + BERTScore VLM critic (`sgm/modules/critic_model/llava_critic.py`).
->
-> Override from the CLI, e.g.:
-> ```bash
-> ... --base=configs/joint_training.yaml ... model.params.critic_type=llava
-> ```
-> (LLaVA runs a generation per reward call and is much slower than LIV.) The separate
-> `diffusion_sbert.py` (SBERT reward) and `diffusion_modified_cycle.py` (LLaVA CycleReward) engines
-> swap in other reward signals — point a config's `model.target` at them to use those instead.
-
 ## 🛠️ Installation
 
 Create the environment:
@@ -159,6 +146,12 @@ PYTHONPATH=. CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python main.py \
     lightning.trainer.devices="0,1,2,3,4,5,6,7"
 ```
 
+> **Critic choice.** DDPO uses the **LIV** image–language value model as the reward by default. To
+> use the **LLaVA-1.5 + BERTScore** VLM critic instead (`sgm/modules/critic_model/llava_critic.py`),
+> add `model.params.critic_type=llava` to the command above (slower — it runs a LLaVA generation per
+> reward call). The separate `diffusion_sbert.py` (SBERT) and `diffusion_modified_cycle.py` (LLaVA
+> CycleReward) engines provide other reward signals via a config's `model.target`.
+
 ### Decoupled two-stage training (baseline / ablation)
 
 The paper compares against a decoupled regime where the video generator is trained first and the
@@ -182,9 +175,7 @@ PYTHONPATH=. python main.py --base=configs/stage_2_action_decoder_training.yaml 
 | `stage_2_action_decoder_training.yaml` | Decoupled baseline — stage 2 action decoder, video model frozen (RoboCasa) |
 | `stage_1_video_model_training_libero.yaml` | Decoupled — stage 1 video model on LIBERO (see also the `libero/` release) |
 
-> **Hardware.** Configs target an **8× GPU** node with **80 GB** VRAM each. An overall batch size of
-> **32** works well; larger batch sizes tend to help. Adjust `lightning.trainer.devices` and
-> `data.params.batch_size` for your setup.
+> **Hardware.** Training requires GPUs with **80 GB** VRAM.
 
 ## 🖥️ Inference / Evaluation
 
