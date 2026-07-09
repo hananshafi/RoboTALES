@@ -286,6 +286,37 @@ video {
   color: #555555;
 }
 
+.rollout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.rollout-card {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #dbdbdb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.rollout-card video {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #ededed;
+}
+
+.rollout-card figcaption {
+  min-height: 4.3rem;
+  padding: 0.75rem 0.85rem;
+  color: #4a4a4a;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .results-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -410,6 +441,10 @@ code {
   .figure-grid {
     grid-template-columns: 1fr;
   }
+
+  .rollout-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 520px) {
@@ -446,5 +481,9 @@ code {
 
   .has-text-justified {
     text-align: left;
+  }
+
+  .rollout-grid {
+    grid-template-columns: 1fr;
   }
 }
