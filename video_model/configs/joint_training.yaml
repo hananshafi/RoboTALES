@@ -25,6 +25,7 @@ model:
 
     optimizer_config:
       target: torch.optim.Adam
+      phase: stage_2   # joint: optimize the vision encoder + action policy (video UNet frozen)
 
     denoiser_config:
       target: sgm.modules.diffusionmodules.denoiser.Denoiser
