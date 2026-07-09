@@ -1,7 +1,7 @@
 # RoboTALES: Learning Reasoning-Guided Robot Policies via Task-Aligned Simulated Futures
 
 ### ECCV 2026
-### [Project Page](TODO) | [Paper](TODO) | [arXiv](TODO)
+### [Project Page](https://hananshafi.github.io/RoboTALES/) | [Paper](https://arxiv.org/pdf/2607.06018) | [arXiv](https://arxiv.org/abs/2607.06018)
 
 <p align="center">
   <a href="assets/iccv-2026-teaser.pdf"><img src="assets/iccv-2026-teaser.png" width="80%"></a>
