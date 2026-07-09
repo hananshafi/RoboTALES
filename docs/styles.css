@@ -349,43 +349,6 @@ video {
   font-size: 0.98rem;
 }
 
-.comparison-table-wrapper {
-  overflow-x: auto;
-  border: 1px solid #dbdbdb;
-  border-radius: 10px;
-  background: #ffffff;
-}
-
-.comparison-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 650px;
-  font-size: 0.98rem;
-}
-
-.comparison-table th,
-.comparison-table td {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid #eeeeee;
-  text-align: left;
-}
-
-.comparison-table th {
-  color: #222222;
-  background: #fbfbfb;
-  font-weight: 700;
-}
-
-.comparison-table tr:last-child td {
-  border-bottom: 0;
-}
-
-.ours-row td {
-  color: #123d34;
-  background: #f0faf7;
-  font-weight: 700;
-}
-
 pre {
   overflow-x: auto;
   margin: 1rem 0 0;
