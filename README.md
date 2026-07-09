@@ -100,19 +100,45 @@ Tested with **Python 3.10, PyTorch 2.1.0, CUDA 11.8**, and `xformers` for memory
 
 ## 🧾 Checkpoints and Datasets
 
-Pretrained checkpoints and the simulation datasets are **not** included in this repo (see
-`video_model/CHECKPOINTS.md` and `video_model/datasets/README.md`).
+### Trained RoboTALES checkpoints (Hugging Face)
 
+The trained checkpoints are hosted at **[hanangani/robotales-ckpts](https://huggingface.co/hanangani/robotales-ckpts)**:
+
+| Benchmark | File |
+|---|---|
+| RoboCasa | `robocasa_ckpt/robotales-trained-robocasa.ckpt` (~14 GB) |
+| LIBERO-10 | `libero10_ckpt/robotales-trained-libero10.ckpt` (~12 GB) |
+
+Download into `video_model/checkpoints/` (run from `video_model/`):
 ```bash
-# TODO: public download URLs to be released
-wget <CHECKPOINTS_URL>   # → place extracted checkpoints/ under video_model/
-wget <DATASETS_URL>      # → place extracted datasets/ under video_model/
+pip install -U "huggingface_hub[cli]"
+huggingface-cli download hanangani/robotales-ckpts --local-dir checkpoints
+# or in Python:
+#   from huggingface_hub import snapshot_download
+#   snapshot_download("hanangani/robotales-ckpts", local_dir="checkpoints")
 ```
 
-Expected layout:
+Then point a config at the checkpoint you want (training or eval), e.g.:
+```bash
+model.params.ckpt_path=checkpoints/robocasa_ckpt/robotales-trained-robocasa.ckpt
+```
+
+### Other required assets (not in this repo)
+
+- **OpenCLIP ViT-H-14 weights** — the conditioner loads `checkpoints/open_clip_pytorch_model.bin`
+  (`laion2b_s32b_b79k`). Grab it from
+  [laion/CLIP-ViT-H-14-laion2B-s32B-b79K](https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K)
+  and place it under `checkpoints/`.
+- **RoboCasa demo datasets** — needed for closed-loop RoboCasa eval (reset states). Install RoboCasa
+  and run its `download_kitchen_assets.py`, then place the demos under `datasets/v0.1/...`.
+
+Expected layout (under `video_model/`):
 ```
 video_model/
 ├── checkpoints/
+│   ├── robocasa_ckpt/robotales-trained-robocasa.ckpt
+│   ├── libero10_ckpt/robotales-trained-libero10.ckpt
+│   └── open_clip_pytorch_model.bin
 └── datasets/v0.1/...
 ```
 
