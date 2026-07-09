@@ -2,205 +2,318 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RoboTALES | ECCV 2026</title>
     <meta
       name="description"
-      content="RoboTALES learns reasoning-guided robot policies by aligning imagined futures with task plans and visual-language feedback."
+      content="RoboTALES: Learning Reasoning-Guided Robot Policies via Task-Aligned Simulated Futures"
     />
-    <link rel="preload" href="assets/robotales-teaser.png" as="image" />
+    <meta
+      name="keywords"
+      content="RoboTALES, robotics, video generation, robot policy, ECCV 2026"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RoboTALES: Learning Reasoning-Guided Robot Policies via Task-Aligned Simulated Futures</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="site-header" aria-label="Primary">
-      <a class="brand" href="#top">RoboTALES</a>
-      <nav class="nav-links" aria-label="Project links">
-        <a href="#method">Method</a>
-        <a href="#results">Results</a>
-        <a href="#demos">Demos</a>
-        <a href="#citation">Citation</a>
-      </nav>
-    </header>
+    <section class="hero publication-header">
+      <div class="hero-body">
+        <div class="container is-max-desktop">
+          <div class="columns is-centered">
+            <div class="column has-text-centered">
+              <h1 class="title is-1 publication-title">
+                RoboTALES: Learning Reasoning-Guided Robot Policies via Task-Aligned Simulated Futures
+              </h1>
 
-    <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-shade"></div>
-        <div class="hero-content">
-          <p class="venue">ECCV 2026</p>
-          <h1 id="hero-title">RoboTALES</h1>
-          <p class="subtitle">
-            Learning reasoning-guided robot policies via task-aligned simulated futures.
-          </p>
-          <p class="authors">
-            Hanan Gani, Tejal Kulkarni, Madhoolika Chodavarapu, Nicklas Hansen,
-            Manmohan Chandraker
-          </p>
-          <div class="actions" aria-label="Project resources">
-            <a class="button primary" href="https://arxiv.org/abs/2607.06018">Paper</a>
-            <a class="button" href="https://github.com/hananshafi/RoboTALES">Code</a>
-            <a class="button" href="https://huggingface.co/hanangani/robotales-ckpts">Checkpoints</a>
+              <div class="is-size-5 publication-authors">
+                <span class="author-block">Hanan Gani,</span>
+                <span class="author-block">Tejal Kulkarni,</span>
+                <span class="author-block">Madhoolika Chodavarapu,</span>
+                <span class="author-block">Nicklas Hansen,</span>
+                <span class="author-block">Manmohan Chandraker</span>
+              </div>
+
+              <div class="is-size-5 publication-authors affiliations">
+                <span class="author-block">University of California, San Diego</span>
+              </div>
+
+              <div class="publication-venue">ECCV 2026</div>
+
+              <div class="publication-links">
+                <span class="link-block">
+                  <a
+                    href="https://arxiv.org/pdf/2607.06018"
+                    class="external-link button is-normal is-rounded is-dark"
+                  >
+                    <span class="icon">📄</span>
+                    <span>Paper</span>
+                  </a>
+                </span>
+                <span class="link-block">
+                  <a
+                    href="https://arxiv.org/abs/2607.06018"
+                    class="external-link button is-normal is-rounded is-dark"
+                  >
+                    <span class="icon ai ai-arxiv"></span>
+                    <span>arXiv</span>
+                  </a>
+                </span>
+                <span class="link-block">
+                  <a
+                    href="https://github.com/hananshafi/RoboTALES"
+                    class="external-link button is-normal is-rounded is-dark"
+                  >
+                    <span class="icon">⌘</span>
+                    <span>Code</span>
+                  </a>
+                </span>
+                <span class="link-block">
+                  <a
+                    href="https://huggingface.co/hanangani/robotales-ckpts"
+                    class="external-link button is-normal is-rounded is-dark"
+                  >
+                    <span class="icon">⬇</span>
+                    <span>Checkpoints</span>
+                  </a>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="intro section-wrap" aria-labelledby="intro-title">
-        <div class="copy">
-          <p class="eyebrow">Task-aligned imagination for robot control</p>
-          <h2 id="intro-title">From raw instruction to reasoned futures to actions.</h2>
+    <section class="hero teaser">
+      <div class="container is-max-desktop">
+        <div class="hero-body">
+          <img
+            src="assets/robotales-teaser.png"
+            class="teaser-image"
+            alt="RoboTALES overview: a planner guides future video imagination, a critic scores alignment, and an action policy controls the robot."
+          />
+          <h2 class="subtitle has-text-centered">
+            RoboTALES converts language instructions into task-aligned simulated futures, then learns
+            actions from those futures through joint world-model and policy training.
+          </h2>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered has-text-centered">
+          <div class="column is-four-fifths">
+            <h2 class="title is-3">Abstract</h2>
+            <div class="content has-text-justified">
+              <p>
+                Pretrained video generative models are promising backbones for visuomotor control,
+                but their imagined futures often drift from task intent and are not reliably
+                action-conditional. <strong>RoboTALES</strong> learns task-aligned simulated futures
+                for robot policy learning by combining three signals: a hierarchical LLM planner that
+                decomposes instructions into subgoals, a frozen vision-language critic that scores
+                imagined rollouts, and a single-stage training objective that jointly optimizes the
+                video generator and action diffusion policy.
+              </p>
+              <p>
+                By aligning imagination with both language-level reasoning and action-level
+                feedback, RoboTALES improves long-horizon manipulation on RoboCasa and LIBERO-10,
+                achieving strong performance with only 50 demonstrations per task.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section is-light">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Highlights</h2>
+        <div class="content highlight-list">
+          <ol>
+            <li>
+              We introduce a reasoning-guided policy learning framework that uses an LLM planner to
+              decompose long-horizon instructions into subgoals for video-conditioned control.
+            </li>
+            <li>
+              We steer imagined futures with a VLM-based critic, keeping generated rollouts aligned
+              with the task instruction rather than drifting into plausible but irrelevant futures.
+            </li>
+            <li>
+              We jointly optimize the video generator and action policy in a single stage, allowing
+              action gradients to improve the representations used for future prediction.
+            </li>
+            <li>
+              RoboTALES achieves strong manipulation results on RoboCasa and LIBERO-10, including
+              64% average RoboCasa success and 97% average LIBERO10 success under the paper protocol.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">RoboTALES Architecture</h2>
+        <div class="content has-text-justified">
           <p>
-            Pretrained video generators are useful world-model backbones, but their imagined
-            futures can drift away from the task and fail to remain action-relevant. RoboTALES
-            closes that gap by decomposing instructions into subgoals, steering generated
-            futures with a frozen VLM critic, and training the video generator jointly with an
-            action diffusion policy.
+            RoboTALES couples a hierarchical planner, Stable Video Diffusion world model, frozen
+            VLM reward critic, and action diffusion policy. The planner provides subgoal-conditioned
+            task structure, the video generator imagines short-horizon futures, the critic rewards
+            task-aligned predictions, and the action policy converts video-model features into
+            executable controls.
           </p>
         </div>
-        <figure class="teaser-panel">
-          <img src="assets/robotales-teaser.png" alt="RoboTALES overview figure showing planner-guided imagined futures, critic feedback, and robot action generation." />
-          <figcaption>
-            The planner structures what the model imagines; the critic keeps those futures aligned
-            with the task; the policy acts from the resulting latent representations.
-          </figcaption>
-        </figure>
-      </section>
-
-      <section id="method" class="method-band" aria-labelledby="method-title">
-        <div class="section-wrap">
-          <p class="eyebrow">Method</p>
-          <h2 id="method-title">A closed loop between reasoning, prediction, and control.</h2>
-          <div class="method-grid">
-            <article class="method-card">
-              <span class="step">01</span>
-              <h3>Hierarchical LLM planner</h3>
-              <p>
-                A long-horizon language instruction is expanded into ordered subgoals, giving the
-                video generator a milestone-level scaffold instead of a single compressed command.
-              </p>
-            </article>
-            <article class="method-card">
-              <span class="step">02</span>
-              <h3>Task-aligned video imagination</h3>
-              <p>
-                Stable Video Diffusion predicts future visual states conditioned on the current
-                observation and the planner output, producing rollouts that follow task logic.
-              </p>
-            </article>
-            <article class="method-card">
-              <span class="step">03</span>
-              <h3>VLM critic steering</h3>
-              <p>
-                A frozen vision-language critic scores imagined futures against the goal and uses
-                reward feedback to refine the video model's task-relevant representations.
-              </p>
-            </article>
-            <article class="method-card">
-              <span class="step">04</span>
-              <h3>Joint action learning</h3>
-              <p>
-                A 1D action diffusion UNet consumes decoder features from the video generator, while
-                action-level gradients flow back into the world model in one training stage.
-              </p>
-            </article>
-          </div>
+        <div class="architecture-card">
+          <img
+            src="assets/robotales-architecture.png"
+            alt="RoboTALES architecture figure"
+          />
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="results" class="section-wrap results" aria-labelledby="results-title">
-        <p class="eyebrow">Results</p>
-        <h2 id="results-title">Stronger long-horizon manipulation with only 50 demonstrations.</h2>
-        <div class="metric-grid">
-          <article class="metric-card accent-green">
+    <section class="section is-light">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Quantitative Results</h2>
+        <p class="section-lead has-text-centered">
+          RoboTALES improves long-horizon robot manipulation by aligning future prediction with task
+          reasoning and control.
+        </p>
+        <div class="results-grid">
+          <div class="result-card">
             <span class="metric">64%</span>
-            <h3>RoboCasa average success</h3>
-            <p>Highest average success across 24 validation tasks under the paper's protocol.</p>
-          </article>
-          <article class="metric-card accent-coral">
+            <span class="metric-label">RoboCasa average success</span>
+          </div>
+          <div class="result-card">
             <span class="metric">97%</span>
-            <h3>LIBERO10 average success</h3>
-            <p>Outperforms strong baselines across 10 long-horizon manipulation tasks.</p>
-          </article>
-          <article class="metric-card accent-amber">
+            <span class="metric-label">LIBERO10 average success</span>
+          </div>
+          <div class="result-card">
             <span class="metric">48%</span>
-            <h3>RoboCasa pick-and-place</h3>
-            <p>Mean success on challenging long-horizon pick-and-place tasks.</p>
-          </article>
-          <article class="metric-card accent-ink">
-            <span class="metric">34</span>
-            <h3>Total benchmark tasks</h3>
-            <p>Evaluated across RoboCasa and LIBERO10 with diverse articulated-object skills.</p>
-          </article>
-        </div>
-        <div class="comparison-strip" aria-label="Average success comparison">
-          <div class="bar-row">
-            <span>VideoPolicy</span>
-            <div class="bar-track"><div class="bar fill-videopolicy"></div></div>
-            <strong>57.5%</strong>
-          </div>
-          <div class="bar-row">
-            <span>RoboTALES</span>
-            <div class="bar-track"><div class="bar fill-robotales"></div></div>
-            <strong>64%</strong>
+            <span class="metric-label">RoboCasa pick-and-place success</span>
           </div>
         </div>
-      </section>
+        <div class="comparison-table-wrapper">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>RoboCasa Avg.</th>
+                <th>LIBERO10 Avg.</th>
+                <th>Training Setup</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>VideoPolicy</td>
+                <td>57.5%</td>
+                <td>-</td>
+                <td>Video model + action policy baseline</td>
+              </tr>
+              <tr class="ours-row">
+                <td>RoboTALES</td>
+                <td>64%</td>
+                <td>97%</td>
+                <td>Planner + VLM critic + joint policy learning</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="figure-grid">
+          <figure>
+            <img src="assets/robotales-avg-success.png" alt="Average success comparison on RoboCasa tasks." />
+            <figcaption>Average success across RoboCasa task groups.</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/robotales-all-tasks.png" alt="Per-task success rates across RoboCasa tasks." />
+            <figcaption>Per-task RoboCasa validation performance.</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/robotales-demo-efficiency.png" alt="Demonstration efficiency results." />
+            <figcaption>Performance as the number of demonstrations changes.</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/robotales-joint-vs-stagewise.png" alt="Joint training versus stagewise training comparison." />
+            <figcaption>Single-stage joint training improves completed tasks.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
 
-      <section id="demos" class="demo-band" aria-labelledby="demos-title">
-        <div class="section-wrap">
-          <p class="eyebrow">Demos</p>
-          <h2 id="demos-title">Policy rollouts from released smoke evaluations.</h2>
-          <div class="demo-grid">
-            <article class="demo-card">
-              <video src="assets/robocasa-open-drawer.mp4" autoplay muted loop playsinline controls></video>
-              <div class="demo-copy">
-                <h3>RoboCasa</h3>
-                <p>OpenDrawer rollout from the RoboCasa evaluation release.</p>
+    <section class="hero is-small demos">
+      <div class="hero-body">
+        <div class="container is-max-desktop">
+          <h2 class="title is-3 has-text-centered">Qualitative Rollouts</h2>
+          <div class="columns is-centered demo-columns">
+            <div class="column">
+              <div class="video-wrapper">
+                <p class="caption">RoboCasa: Open Drawer</p>
+                <video autoplay controls muted loop playsinline>
+                  <source src="assets/robocasa-open-drawer.mp4" type="video/mp4" />
+                </video>
               </div>
-            </article>
-            <article class="demo-card">
-              <video src="assets/libero-moka-pot.mp4" autoplay muted loop playsinline controls></video>
-              <div class="demo-copy">
-                <h3>LIBERO10</h3>
-                <p>KITCHEN_SCENE3 moka-pot rollout from the LIBERO evaluation release.</p>
+            </div>
+            <div class="column">
+              <div class="video-wrapper">
+                <p class="caption">LIBERO10: Put the moka pot on the stove</p>
+                <video autoplay controls muted loop playsinline>
+                  <source src="assets/libero-moka-pot.mp4" type="video/mp4" />
+                </video>
               </div>
-            </article>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="section-wrap resources" aria-labelledby="resources-title">
-        <p class="eyebrow">Resources</p>
-        <h2 id="resources-title">Code, paper, and model checkpoints are public.</h2>
-        <div class="resource-list">
-          <a href="https://arxiv.org/abs/2607.06018">
-            <span>Paper</span>
-            <strong>arXiv:2607.06018</strong>
-          </a>
-          <a href="https://github.com/hananshafi/RoboTALES">
-            <span>Code</span>
-            <strong>github.com/hananshafi/RoboTALES</strong>
-          </a>
-          <a href="https://huggingface.co/hanangani/robotales-ckpts">
-            <span>Checkpoints</span>
-            <strong>hanangani/robotales-ckpts</strong>
-          </a>
+    <section class="section">
+      <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered">Released Checkpoints</h2>
+        <div class="content has-text-centered">
+          <p>
+            Trained RoboCasa and LIBERO10 checkpoints are available on Hugging Face.
+          </p>
+          <p>
+            <a href="https://huggingface.co/hanangani/robotales-ckpts">
+              huggingface.co/hanangani/robotales-ckpts
+            </a>
+          </p>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="citation" class="citation section-wrap" aria-labelledby="citation-title">
-        <p class="eyebrow">Citation</p>
-        <h2 id="citation-title">BibTeX</h2>
+    <section class="section" id="BibTeX">
+      <div class="container is-max-desktop content">
+        <h2 class="title is-3 has-text-centered">BibTeX</h2>
         <pre><code>@inproceedings{gani2026robotales,
   title={RoboTALES: Learning Reasoning-Guided Robot Policies via Task-Aligned Simulated Futures},
   author={Gani, Hanan and Kulkarni, Tejal and Chodavarapu, Madhoolika and Hansen, Nicklas and Chandraker, Manmohan},
   booktitle={European Conference on Computer Vision (ECCV)},
   year={2026}
 }</code></pre>
-      </section>
-    </main>
+      </div>
+    </section>
 
     <footer class="footer">
-      <span>RoboTALES</span>
-      <span>Accepted at ECCV 2026</span>
+      <div class="container">
+        <div class="content has-text-centered">
+          <p>
+            Page style adapted from the academic project-page template used by
+            <a href="https://mbzuai-oryx.github.io/VideoMolmo/">VideoMolmo</a> and
+            <a href="https://nerfies.github.io/">Nerfies</a>.
+          </p>
+        </div>
+      </div>
     </footer>
   </body>
 </html>
