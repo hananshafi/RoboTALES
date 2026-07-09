@@ -344,18 +344,15 @@ bash scripts/sampling/run_libero_planner_split.sh [GPU_A GPU_B]
 
 Per-task rollouts and success results are written under `experiments/<log_folder>/`.
 
-## 🙏 Acknowledgement
-
-<!-- This repository builds on [Stable Video Diffusion / generative-models](https://github.com/Stability-AI/generative-models)
-and the `sdata` data pipeline. We thank the authors for publicly releasing their code. -->
-
 ## 📚 Citation
 
-<!-- ```bibtex
-@inproceedings{robotales2026,
+If you find RoboTALES useful, please cite:
+
+```bibtex
+@inproceedings{gani2026robotales,
   title     = {RoboTALES: Learning Reasoning-Guided Robot Policies via Task-Aligned Simulated Futures},
-  author    = {Anonymous ECCV 2026 Submission},
+  author    = {Gani, Hanan and Kulkarni, Tejal and Chodavarapu, Madhoolika and Hansen, Nicklas and Chandraker, Manmohan},
   booktitle = {European Conference on Computer Vision (ECCV)},
   year      = {2026}
 }
-``` -->
+```
