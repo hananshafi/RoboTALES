@@ -165,7 +165,7 @@ VLM critic steering the world model via DDPO:
 
 ```bash
 PYTHONPATH=. CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python main.py \
-    --base=configs/joint_training.yaml --name=robotales --seed=24 --num_nodes=1 --wandb=1 \
+    --base=configs/joint_training_robocasa.yaml --name=robotales --seed=24 --num_nodes=1 --wandb=1 \
     lightning.trainer.devices="0,1,2,3,4,5,6,7"
 ```
 
@@ -191,12 +191,14 @@ PYTHONPATH=. python main.py --base=configs/stage_2_action_decoder_training.yaml 
 
 ### Config reference
 
+Joint-training configs are split by benchmark: RoboCasa lives under `video_model/configs/`, and LIBERO lives under `libero/video_model/configs/`.
+
 | Config | Role |
 |---|---|
-| `joint_training.yaml` | **RoboTALES single-stage** joint training — main method (RoboCasa) |
+| `joint_training_robocasa.yaml` | **RoboTALES single-stage** joint training — main method (RoboCasa) |
+| `libero/video_model/configs/joint_training_libero.yaml` | **RoboTALES single-stage** joint training — main method (LIBERO-10; run from `libero/video_model/`) |
 | `stage_1_video_model_training.yaml` | Decoupled baseline — stage 1 video model (RoboCasa) |
 | `stage_2_action_decoder_training.yaml` | Decoupled baseline — stage 2 action decoder, video model frozen (RoboCasa) |
-| `stage_1_video_model_training_libero.yaml` | LIBERO video-model pre-training (see the `libero/` release for joint training) |
 
 > **Hardware.** Training requires GPUs with **80 GB** VRAM.
 
@@ -266,7 +268,7 @@ export LIBERO_PP="<path-to>/LIBERO:<path-to>/robosuite_libero"
 
 As on RoboCasa, the main LIBERO-10 results use **single-stage joint training**: the vision encoder
 and the action policy are optimized **together** (video + action loss) with
-`stage_2_action_decoder_training.yaml`, initialized from a pre-trained video-model checkpoint.
+`joint_training_libero.yaml`, initialized from a pre-trained video-model checkpoint.
 
 ```bash
 # (Prerequisite) pre-train the video model from SVD-XT -> produces the init checkpoint.
@@ -274,13 +276,13 @@ PYTHONPATH=. python main.py --base=configs/stage_1_video_model_training.yaml \
     --name=libero_video --seed=24 --wandb=1
 
 # Joint training (main method). Set model.params.ckpt_path to the video checkpoint above.
-PYTHONPATH=. python main.py --base=configs/stage_2_action_decoder_training.yaml \
+PYTHONPATH=. python main.py --base=configs/joint_training_libero.yaml \
     --name=libero_joint --seed=24 --wandb=1
 ```
 
 | Config | Role |
 |---|---|
-| `stage_2_action_decoder_training.yaml` | **Joint training — main method** (vision encoder + action policy, `diffusion.py`) |
+| `joint_training_libero.yaml` | **Joint training — main method** (vision encoder + action policy, `diffusion.py`) |
 | `stage_1_video_model_training.yaml` | Video-model pre-training that produces the init checkpoint |
 
 ### Evaluation

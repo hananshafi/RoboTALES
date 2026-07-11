@@ -1,4 +1,4 @@
-logdir: 'joint_training'
+logdir: 'joint_training_libero'
 find_unused_parameters: True
 
 model:
@@ -7,17 +7,13 @@ model:
   params:
     scale_factor: 0.18215
     disable_first_stage_autocast: True
-    ckpt_path: checkpoints/epoch=00000-step=00017000.ckpt    #/home/hanan/videopolicy/video_model/checkpoints/joint_trained_step_369k.ckpt
-    # ckpt_path: checkpoints/svd_xt.safetensors
+    # ckpt_path: logs/stage_1_training/checkpoints/trainstep_checkpoints/enter_your_checkpoint_here.ckpt
+    ckpt_path: logs/stage_1_training/checkpoints/epoch=00039-step=00170000.ckpt
     use_ema: False
     ema_decay_rate: 0.9999
     en_and_decode_n_samples_a_time: 2
     vision_encoder_lr_scale: 5
     pose_decoder_lr_scale: 5
-    # DDPO reward/critic model: "liv" (LIV image-language value, default) or
-    # "llava" (LLaVA-1.5 + BERTScore VLM critic). Override on the CLI with
-    # model.params.critic_type=llava
-    critic_type: liv
     grad_config:
       train_vision_encoder: True
       train_pose_pred_net: True
@@ -25,7 +21,6 @@ model:
 
     optimizer_config:
       target: torch.optim.Adam
-      phase: stage_2   # joint: optimize the vision encoder + action policy (video UNet frozen)
 
     denoiser_config:
       target: sgm.modules.diffusionmodules.denoiser.Denoiser
@@ -141,7 +136,7 @@ model:
           target: sgm.modules.diffusionmodules.guiders.LinearPredictionGuider
           params:
             num_frames: 25
-            num_pose_frames: 32
+            num_pose_frames: 36
             max_scale: 2.5
             min_scale: 1.0
 
@@ -214,41 +209,27 @@ model:
 data:
   target: sgm.data.video.VideoDatasetModule
   params:
-    n_frames: 25
+    n_frames: 26
     cond_aug: 0.02
     motion_bucket_id: 100
     fps_id: 6
     frame_width: 256
     frame_height: 256
     tasks:
-      CoffeePressButton: null
-      CoffeeServeMug: null
-      CoffeeSetupMug: null
-      CloseDoubleDoor: null
-      CloseSingleDoor: null
-      OpenDoubleDoor: null
-      OpenSingleDoor: null
-      CloseDrawer: null
-      OpenDrawer: null
-      TurnOffMicrowave: null
-      TurnOnMicrowave: null
-      PnPCabToCounter: null
-      PnPCounterToCab: null
-      PnPCounterToMicrowave: null
-      PnPCounterToSink: null
-      PnPCounterToStove: null
-      PnPMicrowaveToCounter: null
-      PnPSinkToCounter: null
-      PnPStoveToCounter: null
-      TurnOffSinkFaucet: null
-      TurnOnSinkFaucet: null
-      TurnSinkSpout: null
-      TurnOffStove: null
-      TurnOnStove: null
-    skip_demos:
-      TurnOnStove: ["demo_33", "demo_37"]
-    video_stride: 4
-    video_pred_horizon: 8
+      LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket_demo: null
+      LIVING_ROOM_SCENE2_put_both_the_cream_cheese_box_and_the_butter_in_the_basket_demo: null
+      KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it_demo: null
+      KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it_demo: null
+      LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate_demo: null
+      STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy_demo: null
+      LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate_demo: null
+      LIVING_ROOM_SCENE1_put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket_demo: null
+      KITCHEN_SCENE8_put_both_moka_pots_on_the_stove_demo: null
+      KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it_demo: null
+    skip_demos: {}
+    sample_fps: 10
+    video_fps: 30
+    pred_horizon: 12
     aug:
       brightness: 0.2
       contrast: 0.2
@@ -291,7 +272,7 @@ lightning:
           n_rows: 2
 
   trainer:
-    devices: 0,5,7
+    devices: 0,
     precision: 16-mixed
     benchmark: True
     num_sanity_val_steps: 0
@@ -299,4 +280,3 @@ lightning:
     val_check_interval: 2
     limit_val_batches: 0.0  # effectively disables val_check_interval
     max_epochs: 100
-    log_every_n_steps: 1
