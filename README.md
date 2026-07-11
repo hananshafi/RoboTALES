@@ -1,6 +1,6 @@
 # RoboTALES: Learning Reasoning-Guided Robot Policies via Task-Aligned Simulated Futures
 
-**Authors:** Hanan Gani, Tejal Kulkarni, Madhoolika Chodavarapu, Nicklas Hansen, Manmohan Chandraker  
+**Authors:** [Hanan Gani](https://hananshafi.github.io/), [Tejal Kulkarni](https://scholar.google.com/citations?view_op=search_authors&mauthors=Tejal+Kulkarni), [Madhoolika Chodavarapu](https://www.linkedin.com/in/madhoolika-chodavarapu/), [Nicklas Hansen](https://www.nicklashansen.com/), [Manmohan Chandraker](https://cseweb.ucsd.edu/~mkchandraker/)  
 **Affiliation:** University of California, San Diego
 
 ### ECCV 2026
