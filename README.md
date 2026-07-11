@@ -23,7 +23,7 @@
 │   ├── main.py                 # training entry point
 │   ├── eval_script.py          # aggregates eval results → success rates
 │   ├── videopolicy_planner.py  # hierarchical LLM planner
-│   ├── configs/                # training configs (single-stage / two-stage / ablations)
+│   ├── configs/                # joint-training configs
 │   ├── scripts/sampling/       # inference / evaluation
 │   │   ├── robocasa_experiment.py        # closed-loop RoboCasa evaluation
 │   │   └── configs/svd_xt*.yaml          # inference configs
@@ -141,64 +141,23 @@ instruction to the cache) to plan new tasks.
 
 ## 🚀 Training
 
-All training is launched with `main.py` from inside the `video_model/` folder. The general form is:
+### RoboCasa Single-Stage Joint Training
+
+Run the main RoboTALES training config from `video_model/`:
 
 ```bash
-PYTHONPATH=. CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python main.py \
-    --base=configs/<CONFIG>.yaml \
-    --name=<RUN_NAME> \
-    --seed=24 \
-    --num_nodes=1 \
-    --wandb=1 \
-    lightning.trainer.devices="0,1,2,3,4,5,6,7"
-```
-
-Useful flags (see `main.py` for the full list): `--base` (config, required), `--name` (run name),
-`--seed`, `--num_nodes`, `--wandb` (`0`/`1`), `--resume` / `--resume_from_checkpoint` (continue a run),
-`--logdir` (output dir). Any `key=value` after the flags overrides a config field
-(e.g. `lightning.trainer.devices`, `data.params.batch_size`, `model.params.ckpt_path`).
-
-### RoboTALES (single-stage joint training) — main method
-
-This jointly optimizes the planner-conditioned video generator and the action policy, with the
-VLM critic steering the world model via DDPO:
-
-```bash
+cd video_model
 PYTHONPATH=. CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python main.py \
     --base=configs/joint_training_robocasa.yaml --name=robotales --seed=24 --num_nodes=1 --wandb=1 \
     lightning.trainer.devices="0,1,2,3,4,5,6,7"
 ```
 
-> **Critic choice.** DDPO uses the **LIV** image–language value model as the reward by default. To
-> use the **LLaVA-1.5 + BERTScore** VLM critic instead (`sgm/modules/critic_model/llava_critic.py`),
-> add `model.params.critic_type=llava` to the command above (slower — it runs a LLaVA generation per
-> reward call). The separate `diffusion_sbert.py` (SBERT) and `diffusion_modified_cycle.py` (LLaVA
-> CycleReward) engines provide other reward signals via a config's `model.target`.
-
-### Decoupled two-stage training (baseline / ablation)
-
-The paper compares against a decoupled regime where the video generator is trained first and the
-action policy is trained afterward on frozen features:
-
-```bash
-# Stage 1 — video model (planner + DDPO critic)
-PYTHONPATH=. python main.py --base=configs/stage_1_video_model_training.yaml --name=stage1 ...
-
-# Stage 2 — action decoder on the frozen video model
-#   (set model.params.ckpt_path to your Stage 1 checkpoint)
-PYTHONPATH=. python main.py --base=configs/stage_2_action_decoder_training.yaml --name=stage2 ...
-```
-
-### Config reference
-
-Joint-training configs are split by benchmark: RoboCasa lives under `video_model/configs/`, and LIBERO lives under `libero/video_model/configs/`.
+### Joint-Training Configs
 
 | Config | Role |
 |---|---|
-| `joint_training_robocasa.yaml` | **RoboTALES single-stage** joint training — main method (RoboCasa) |
-| `libero/video_model/configs/joint_training_libero.yaml` | **RoboTALES single-stage** joint training — main method (LIBERO-10; run from `libero/video_model/`) |
-| `stage_1_video_model_training.yaml` | Decoupled baseline — stage 1 video model (RoboCasa) |
-| `stage_2_action_decoder_training.yaml` | Decoupled baseline — stage 2 action decoder, video model frozen (RoboCasa) |
+| `video_model/configs/joint_training_robocasa.yaml` | RoboCasa single-stage joint training |
+| `libero/video_model/configs/joint_training_libero.yaml` | LIBERO-10 single-stage joint training |
 
 > **Hardware.** Training requires GPUs with **80 GB** VRAM.
 
@@ -211,15 +170,16 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python scripts/sampling/robocasa_experiment.
     -c scripts/sampling/configs/svd_xt_newckpt.yaml
 ```
 
-Before running, edit the inference config (`scripts/sampling/configs/svd_xt_newckpt.yaml`):
+Before running, set only the checkpoint/logging paths in `scripts/sampling/configs/svd_xt_newckpt.yaml`:
 
-- **`model.params.ckpt_path`** — your trained RoboTALES checkpoint (the shipped value is a placeholder
-  local path and **must** be changed).
+- **`model.params.ckpt_path`** — your trained RoboTALES checkpoint.
 - **`log_folder`** — results are written to `experiments/<log_folder>/`.
-- **`number_of_experiments`** — demos attempted per launch.
-- **`max_traj_len`**, **`action_horizon`**, **`decoding_t`** — rollout length, actions executed per
-  step, decoded frames.
-- **`data.params.tasks`** — the RoboCasa tasks (24 by default), each with `num_experiments`.
+
+The paper reproducibility settings are already the defaults in this config and should be kept unchanged:
+
+- **`number_of_experiments: 50`** — demos attempted per launch.
+- **`max_traj_len: 1000`**, **`action_horizon: 16`**, **`decoding_t: 25`** — rollout length, actions executed per step, and decoded frames.
+- **`data.params.tasks`** — the 24 RoboCasa tasks, each with **`num_experiments: 50`**.
 
 **Multi-GPU.** Each launch claims the next pending task/demo via a file lock on
 `experiments/<log_folder>/multi_environment_experiment_record.json`, so you can parallelize by running
@@ -229,13 +189,6 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python scripts/sampling/robocasa_experiment.
 CUDA_VISIBLE_DEVICES=1 PYTHONPATH=. python scripts/sampling/robocasa_experiment.py -c scripts/sampling/configs/svd_xt_newckpt.yaml &
 # ... one per available GPU
 ```
-
-### Inference config variants
-
-| Config | Description |
-|---|---|
-| `svd_xt_newckpt.yaml` | **RoboTALES** — planner + critic (main evaluation) |
-| `svd_xt_newckpt_baseline.yaml` | Baseline policy |
 
 ### Computing success rates
 
@@ -247,8 +200,27 @@ This prints per-task and overall mean success rates from the experiment record.
 
 ## 🤖 LIBERO-10
 
-The `libero/` folder is a **self-contained** release for the LIBERO-10 benchmark with its own
-`video_model/`, `sgm/`, configs, and scripts. Run everything from `libero/video_model/`:
+The `libero/` folder is a self-contained release for the LIBERO-10 benchmark. Dataset setup paths below are from the repo root; training and evaluation commands run from `libero/video_model/`.
+
+### Dataset
+
+The loaders expect LIBERO-10 HDF5 files under `libero/datasets/libero_10/`. Download the VideoPolicy LIBERO release archive and keep only the dataset directory:
+
+```bash
+cd libero
+wget https://videopolicy.cs.columbia.edu/assets/libero_release.zip
+unzip libero_release.zip
+# If the zip extracts into a wrapper directory, move only its datasets/ folder here.
+```
+
+Expected layout:
+
+```text
+libero/
+└── datasets/libero_10/*.hdf5
+```
+
+Run training and evaluation from:
 
 ```bash
 cd libero/video_model
@@ -266,36 +238,16 @@ export LIBERO_PP="<path-to>/LIBERO:<path-to>/robosuite_libero"
 
 ### Training (single-stage joint) — main method
 
-As on RoboCasa, the main LIBERO-10 results use **single-stage joint training**: the vision encoder
-and the action policy are optimized **together** (video + action loss) with
-`joint_training_libero.yaml`, initialized from a pre-trained video-model checkpoint.
+Run the main LIBERO-10 joint-training config from `libero/video_model/`:
 
 ```bash
-# (Prerequisite) pre-train the video model from SVD-XT -> produces the init checkpoint.
-PYTHONPATH=. python main.py --base=configs/stage_1_video_model_training.yaml \
-    --name=libero_video --seed=24 --wandb=1
-
-# Joint training (main method). Set model.params.ckpt_path to the video checkpoint above.
 PYTHONPATH=. python main.py --base=configs/joint_training_libero.yaml \
     --name=libero_joint --seed=24 --wandb=1
 ```
 
-| Config | Role |
-|---|---|
-| `joint_training_libero.yaml` | **Joint training — main method** (vision encoder + action policy, `diffusion.py`) |
-| `stage_1_video_model_training.yaml` | Video-model pre-training that produces the init checkpoint |
-
 ### Evaluation
 
-**Baseline (no planner)** — `libero_experiment.py` on a LIBERO task suite:
-
-```bash
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH="$LIBERO_PP:." \
-    python scripts/sampling/libero_experiment.py \
-    --config=scripts/sampling/configs/svd_xt_libero_90_original.yaml
-```
-
-**RoboTALES (planner-conditioned)** — `libero_planner.py` with `--use_planner`:
+**RoboTALES (planner-conditioned)**:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 PYTHONPATH="$LIBERO_PP:." \
@@ -308,10 +260,6 @@ split configs). Export `LIBERO_PP` (as above) so the scripts find your `LIBERO` 
 clones:
 
 ```bash
-# Baseline: LIBERO-90 split across 4 GPUs (default 3 4 5 6)
-bash scripts/sampling/run_libero_original_split4.sh [GPU_A GPU_B GPU_C GPU_D]
-
-# Planner: split across 2 GPUs (default 4 5)
 bash scripts/sampling/run_libero_planner_split.sh [GPU_A GPU_B]
 ```
 
