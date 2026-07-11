@@ -10,43 +10,6 @@
   <a href="assets/iccv-2026-teaser.pdf"><img src="assets/iccv-2026-teaser.png" width="80%"></a>
 </p>
 
-## 📖 Overview
-
-Pretrained video generative models are promising backbones for visuomotor control, but their
-imagined futures often drift from task intent and are not reliably action-conditional, which makes
-them hard to use for planning or action extraction. **RoboTALES** is a **single-stage** framework
-that learns *task-aligned* simulated futures and uses them to train robot policies. It introduces
-two key ideas:
-
-1. **Hierarchical LLM Planner.** A reasoning LLM decomposes a complex task instruction into an
-   ordered sequence of sub-goals that condition the video model's imagination, turning
-   undifferentiated prediction into structured, milestone-driven simulation.
-2. **VLM-based Critic (reward-guided steering).** A frozen vision-language critic evaluates the
-   "imagined" futures against the task instruction and feeds reward-based signal back into the video
-   generator's hidden states via **differentiable policy optimization (DDPO)**, keeping the model's
-   internal representations focused on the goal.
-
-By anchoring the video generator in abstract reasoning and steering its representations with the
-critic, RoboTALES produces temporally consistent rollouts and more coherent actions. Crucially, the
-video generator and the action policy are optimized **jointly in a single stage**, so action-level
-gradients flow back into the video generator's decoder layers — the world model learns to "imagine
-for acting" while the policy learns to "act from imagination."
-
-We evaluate on diverse manipulation tasks from **RoboCasa** and **LIBERO-10**, where RoboTALES
-consistently outperforms existing methods, especially on long-horizon tasks (e.g. 48% mean success
-on challenging RoboCasa Pick-and-Place, and 64% / 96% on multi-step turning / pressing).
-
-### Method at a glance
-
-RoboTALES couples four components (see Figure 2 in the paper):
-
-| Component | Role | Where in the code |
-|---|---|---|
-| **LLM Planner** `F_P` | Decomposes instruction `τ` into `K∈[2,5]` sub-goals → augmented plan `C*` | `video_model/videopolicy_planner.py`, `sgm/data/llm_planner.py` |
-| **Video Generator** `G_θ` | Stable Video Diffusion backbone; predicts short-horizon future latents conditioned on the plan | `sgm/models/diffusion.py`, `sgm/modules/diffusionmodules/video_model.py` |
-| **Reward Critic** `F_R` | Scores imagined rollouts; reward drives DDPO steering of `G_θ`. Selectable via `critic_type`: **LIV** (default) or **LLaVA-1.5 + BERTScore** | dispatch in `sgm/models/diffusion.py`; critics in `sgm/modules/critic_model/llava_critic.py`, `llava_cycle_critic.py` |
-| **Action Policy** `π_φ` | 1D action diffusion UNet decoding executable actions from `G_θ` features | `pose_net` in the network config; `sgm/models/diffusion.py` |
-
 ## 🗂️ Repository Structure
 
 ```
@@ -132,8 +95,13 @@ model.params.ckpt_path=checkpoints/robocasa_ckpt/robotales-trained-robocasa.ckpt
   (`laion2b_s32b_b79k`). Grab it from
   [laion/CLIP-ViT-H-14-laion2B-s32B-b79K](https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K)
   and place it under `checkpoints/`.
-- **RoboCasa demo datasets** — needed for closed-loop RoboCasa eval (reset states). Install RoboCasa
-  and run its `download_kitchen_assets.py`, then place the demos under `datasets/v0.1/...`.
+- **RoboCasa demo datasets** — needed for closed-loop RoboCasa eval (reset states). Download the
+  simulation dataset and place the extracted `datasets/` folder under `video_model/`:
+  ```bash
+  cd video_model
+  wget https://videopolicy.cs.columbia.edu/assets/datasets.zip
+  unzip datasets.zip
+  ```
 
 Expected layout (under `video_model/`):
 ```
