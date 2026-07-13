@@ -40,7 +40,7 @@
 
 Create the environment:
 ```bash
-git clone <REPO_URL>           # TODO: anonymized repo URL
+git clone https://github.com/hananshafi/RoboTALES.git
 cd robotales
 conda create -n robotales python=3.10
 conda activate robotales
@@ -277,3 +277,6 @@ If you find RoboTALES useful, please cite:
   year      = {2026}
 }
 ```
+
+## Acknowledgment
+Our repo is built on top of [VideoPolicy](https://github.com/cvlab-columbia/videopolicy) codebase. We thank them for releasing their code and sharing with us their LIBERO-10 code.
